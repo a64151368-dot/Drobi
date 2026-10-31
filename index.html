@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Раціональні вирази та дроби</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@600;800&family=Lora:ital,wght@0,400;0,700;1,500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #f3e5ab;
+            --bright-gold: #ffd700;
+            --dark-gold: #b5952f;
+            --parchment: #f4ecd8;
+            --brown: #3e2723;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #2c1810;
+            font-family: 'Lora', serif;
+            height: 100vh;
+        }
+
+        /* ===== Сцена з фоном ===== */
+        .map {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background-color: #3e2723;
+            background-image: url('https://raw.githubusercontent.com/a64151368-dot/Drobi/main/%D0%9C%D0%B0%D0%B3%D1%96%D1%87%D0%BD%D0%B8%D0%B8%CC%86%20%D0%B4%D0%B2%D1%96%D1%80%20%D0%B0%D0%BA%D0%B0%D0%B4%D0%B5%D0%BC%D1%96%D1%96%CC%88%20%D0%BD%D0%B0%20%D0%B7%D0%B0%D1%85%D0%BE%D0%B4%D1%96%20%D1%81%D0%BE%D0%BD%D1%86%D1%8F.png');
+            background-size: cover;
+            background-position: center;
+            overflow: hidden;
+        }
+
+        /* Сцена з пропорціями фонового зображення (1671×941):
+           мітли прив'язані до картинки й не «з'їжджають» на різних екранах */
+        .stage {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: max(100vw, 100vh * 1.7758);
+            height: max(100vh, 100vw / 1.7758);
+            transform: translate(-50%, -50%);
+        }
+
+        .map::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            box-shadow: inset 0 0 120px rgba(20, 8, 2, 0.55);
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        /* Золотий пил, що мерехтить у повітрі */
+        .dust {
+            position: absolute;
+            width: 4px; height: 4px;
+            border-radius: 50%;
+            background: #fff6c4;
+            box-shadow: 0 0 8px 2px rgba(255, 215, 0, 0.8);
+            opacity: 0;
+            pointer-events: none;
+            animation: dust-float linear infinite;
+        }
+
+        @keyframes dust-float {
+            0%   { opacity: 0; transform: translateY(0) scale(0.6); }
+            20%  { opacity: 1; }
+            80%  { opacity: 0.8; }
+            100% { opacity: 0; transform: translateY(-25vh) scale(1.2); }
+        }
+
+        /* ===== Об'ємний заголовок ===== */
+        .title {
+            position: absolute;
+            top: 3vh;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 96vw;
+            text-align: center;
+            z-index: 5;
+            pointer-events: none;
+            animation: title-glow 4s ease-in-out infinite alternate;
+        }
+
+        .title h1 {
+            margin: 0;
+            font-family: 'Cinzel Decorative', 'Cinzel', serif;
+            font-weight: 900;
+            font-size: clamp(2rem, 5.6vw, 5.8rem);
+            line-height: 1.1;
+            letter-spacing: 2px;
+            color: #ffe066;
+            text-shadow:
+                0 1px 0 #f5c518,
+                0 2px 0 #e0ac10,
+                0 3px 0 #c9960c,
+                0 4px 0 #b3820a,
+                0 5px 0 #9c6e08,
+                0 6px 0 #855b06,
+                0 7px 0 #6e4905,
+                0 8px 0 #573804,
+                0 10px 12px rgba(0, 0, 0, 0.75),
+                0 16px 30px rgba(0, 0, 0, 0.6),
+                0 0 40px rgba(255, 215, 0, 0.55);
+        }
+
+        @keyframes title-glow {
+            0%   { filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.3)); transform: translateX(-50%) translateY(0); }
+            100% { filter: drop-shadow(0 0 22px rgba(255, 215, 0, 0.75)); transform: translateX(-50%) translateY(-4px); }
+        }
+
+        /* ===== Мітли (стоять вертикально на траві перед учнями) ===== */
+        .broom {
+            position: absolute;
+            left: var(--x);
+            bottom: var(--b);
+            width: var(--w);
+            transform: translateX(-50%);
+            cursor: pointer;
+            text-decoration: none;
+            z-index: 4;
+        }
+
+        /* Рамка з пропорціями мітли; саме зображення повернуте на -38°,
+           щоб мітла стояла рівно */
+        .broom-body {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 556 / 1300;
+            transform-origin: 50% 100%;
+            animation: levitate 3.4s ease-in-out infinite;
+            animation-delay: var(--d);
+            transition: filter 0.35s ease;
+            filter: saturate(1.25) contrast(1.1) drop-shadow(0 8px 8px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 8px rgba(255, 215, 0, 0.45));
+        }
+
+        .broom-body img {
+            position: absolute;
+            width: 345.32%;
+            height: 83.077%;
+            left: -55.933%;
+            top: -7.154%;
+            transform: rotate(-38deg);
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .broom:hover .broom-body {
+            animation: levitate-high 1.6s ease-in-out infinite;
+            filter: saturate(1.3) contrast(1.1) brightness(1.1) drop-shadow(0 14px 14px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 22px rgba(255, 215, 0, 0.95));
+        }
+
+        @keyframes levitate {
+            0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+            50%      { transform: translateY(-3%) rotate(1.5deg); }
+        }
+
+        @keyframes levitate-high {
+            0%, 100% { transform: translateY(-7%) rotate(-3deg) scale(1.06); }
+            50%      { transform: translateY(-10%) rotate(3deg) scale(1.06); }
+        }
+
+        /* Золоте сяйво на траві під мітлою */
+        .ground-glow {
+            position: absolute;
+            left: 50%;
+            bottom: -4%;
+            width: 170%;
+            height: 9%;
+            transform: translateX(-50%);
+            border-radius: 50%;
+            background: radial-gradient(ellipse, rgba(255, 215, 0, 0.6) 0%, rgba(255, 170, 0, 0.25) 45%, transparent 72%);
+            animation: glow-pulse 3.4s ease-in-out infinite;
+            animation-delay: var(--d);
+            pointer-events: none;
+        }
+
+        @keyframes glow-pulse {
+            0%, 100% { opacity: 0.9; transform: translateX(-50%) scale(1); }
+            50%      { opacity: 0.5; transform: translateX(-50%) scale(0.85); }
+        }
+
+        /* Номер і назва на держаку */
+        .broom-tag {
+            position: absolute;
+            left: 60%;
+            bottom: 101%;
+            transform: translateX(-50%);
+            width: 150%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            z-index: 2;
+        }
+
+        .broom-num {
+            font-family: 'Cinzel', serif;
+            font-weight: 800;
+            font-size: clamp(1.4rem, 2.6vw, 2.8rem);
+            line-height: 1;
+            color: var(--bright-gold);
+            background: rgba(25, 12, 6, 0.88);
+            padding: 6px 14px;
+            border-radius: 12px;
+            border: 2px solid var(--bright-gold);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.9), inset 0 0 12px rgba(255, 215, 0, 0.3);
+            text-shadow: 0 2px 4px #000, 0 0 12px rgba(255, 215, 0, 0.6);
+            transition: all 0.3s;
+        }
+
+        .broom-label {
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            font-size: clamp(0.7rem, 1vw, 1.05rem);
+            color: #fff;
+            background: rgba(30, 15, 8, 0.92);
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--bright-gold);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
+            max-width: 100%;
+            text-align: center;
+            line-height: 1.2;
+            text-shadow: 0 1px 2px #000;
+            transition: all 0.3s;
+        }
+
+        .broom:hover .broom-num,
+        .broom:hover .broom-label {
+            background: var(--bright-gold);
+            color: var(--brown);
+            text-shadow: none;
+            box-shadow: 0 0 18px var(--bright-gold);
+        }
+
+        /* Золоті іскри, що здіймаються від віника */
+        .sparks {
+            position: absolute;
+            left: 45%;
+            bottom: 18%;
+            width: 0; height: 0;
+            pointer-events: none;
+        }
+
+        .sparks i {
+            position: absolute;
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: #fff8d0;
+            box-shadow: 0 0 8px 3px rgba(255, 200, 0, 0.9);
+            opacity: 0;
+            animation: spark 2.2s ease-out infinite;
+        }
+
+        .sparks i:nth-child(1) { animation-delay: 0s;    --dx: -30px; --dy: -60px; }
+        .sparks i:nth-child(2) { animation-delay: 0.35s; --dx: 25px;  --dy: -75px; }
+        .sparks i:nth-child(3) { animation-delay: 0.7s;  --dx: -12px; --dy: -90px; }
+        .sparks i:nth-child(4) { animation-delay: 1.05s; --dx: 35px;  --dy: -50px; }
+        .sparks i:nth-child(5) { animation-delay: 1.4s;  --dx: -38px; --dy: -40px; }
+        .sparks i:nth-child(6) { animation-delay: 1.75s; --dx: 10px;  --dy: -100px; }
+
+        @keyframes spark {
+            0%   { opacity: 0; transform: translate(0, 0) scale(1); }
+            15%  { opacity: 1; }
+            100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.2); }
+        }
+
+        /* Розташування: x — центр мітли, b — відстань від низу картинки, w — ширина.
+           1–3 перед лівою групою учнів, 4–6 перед правою; ближчі мітли більші */
+        #b1 { --x: 24%;   --b: 4%;  --w: 10%; --d: 0s;   }
+        #b2 { --x: 34.5%; --b: 10%; --w: 9%;  --d: 0.6s; }
+        #b3 { --x: 45%;   --b: 15%; --w: 8%;  --d: 1.2s; }
+        #b4 { --x: 66.5%; --b: 15%; --w: 8%;  --d: 1.8s; }
+        #b5 { --x: 75.5%; --b: 10%; --w: 9%;  --d: 0.9s; }
+        #b6 { --x: 85.5%; --b: 4%;  --w: 10%; --d: 2.4s; }
+
+        /* ===== Модальні вікна ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(244, 236, 216, 0.45);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal-overlay.transparent-bg { background: rgba(244, 236, 216, 0.2); }
+
+        .modal-content {
+            background-color: var(--parchment);
+            border: 5px double var(--brown);
+            border-radius: 15px;
+            padding: 35px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 0 35px var(--bright-gold);
+            max-width: 650px;
+            width: 90%;
+            animation: pop-in 0.45s cubic-bezier(0.25, 1.4, 0.5, 1);
+        }
+
+        @keyframes pop-in {
+            from { transform: scale(0.7); opacity: 0; }
+            to   { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-content.full {
+            width: 98vw;
+            height: 98vh;
+            max-width: none;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 12px;
+            right: 15px;
+            width: 45px; height: 45px;
+            background-color: var(--brown);
+            color: var(--bright-gold);
+            border: 2px solid var(--bright-gold);
+            border-radius: 50%;
+            font-size: 2rem;
+            font-family: 'Cinzel', serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            line-height: 1;
+            z-index: 10;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background-color: var(--bright-gold);
+            color: var(--brown);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px var(--bright-gold);
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 10px;
+        }
+
+        /* Сувої знань — зображення */
+        .scroll-img-wrap {
+            flex: 1;
+            width: 100%;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            background: #efe2c4;
+        }
+
+        .scroll-img-wrap img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            cursor: zoom-in;
+            transition: transform 0.3s;
+        }
+
+        .scroll-img-wrap.zoomed { align-items: flex-start; justify-content: flex-start; }
+        .scroll-img-wrap.zoomed img { max-width: none; max-height: none; width: 180%; cursor: zoom-out; }
+
+        /* Дзеркало Ерісед */
+        #modal-2 .modal-content {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            animation: slideUp 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            max-width: 900px;
+        }
+
+        #modal-2 .close-btn { top: -20px; right: 10px; }
+
+        #modal-2 h2 {
+            color: var(--bright-gold);
+            font-size: 2.6rem;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.8), 0 2px 5px rgba(0, 0, 0, 0.9);
+            margin-bottom: 25px;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100vh); opacity: 0; }
+            to   { transform: translateY(0); opacity: 1; }
+        }
+
+        .dynamic-cloud {
+            background: rgba(15, 8, 4, 0.85);
+            border: 3px solid var(--bright-gold);
+            border-radius: 40px;
+            padding: 35px 45px;
+            animation: cloud-pulse 4s ease-in-out infinite alternate;
+            transition: all 0.4s ease;
+        }
+
+        .dynamic-cloud:hover {
+            transform: scale(1.03);
+            border-color: #fff;
+            background: rgba(25, 12, 6, 0.93);
+        }
+
+        @keyframes cloud-pulse {
+            0%   { box-shadow: 0 0 30px rgba(255, 215, 0, 0.3), inset 0 0 15px rgba(255, 215, 0, 0.15), 0 10px 30px rgba(0, 0, 0, 0.9); }
+            100% { box-shadow: 0 0 45px rgba(255, 215, 0, 0.6), inset 0 0 25px rgba(255, 215, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.9); }
+        }
+
+        .magic-text {
+            font-size: clamp(1.3rem, 2.4vw, 2.2rem);
+            font-style: italic;
+            color: var(--parchment);
+            line-height: 1.5;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 15px rgba(255, 215, 0, 0.5);
+            margin: 0;
+        }
+
+        /* Виручай-кімната */
+        #modal-5 .modal-content {
+            background: radial-gradient(circle, #2c1810 0%, #110906 100%);
+            border: 4px solid var(--bright-gold);
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.8), inset 0 0 30px rgba(255, 215, 0, 0.3);
+            max-width: 700px;
+            padding: 50px 30px;
+        }
+
+        #modal-5 h2 { color: var(--bright-gold); text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); margin-bottom: 30px; }
+
+        h2 { font-family: 'Cinzel', serif; color: var(--brown); font-size: 2.4rem; margin-top: 0; }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: var(--brown);
+            color: var(--parchment);
+            text-decoration: none;
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            border: 2px solid var(--bright-gold);
+            border-radius: 8px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: var(--bright-gold);
+            color: var(--brown);
+            box-shadow: 0 0 15px var(--bright-gold);
+        }
+
+        .btn-small { padding: 12px 18px; font-size: 1rem; background-color: #5d4037; }
+
+        .btn-magic-large {
+            display: block;
+            width: 80%;
+            padding: 20px 30px;
+            font-family: 'Cinzel', serif;
+            font-size: 1.4rem;
+            text-decoration: none;
+            background: linear-gradient(45deg, #3e2723, #5d4037);
+            color: var(--bright-gold);
+            border: 3px solid var(--bright-gold);
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(255, 215, 0, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.4s ease;
+        }
+
+        .btn-magic-large:hover {
+            background: var(--bright-gold);
+            color: #2c1810;
+            box-shadow: 0 0 30px var(--bright-gold), inset 0 0 10px #fff;
+            transform: scale(1.03);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="map" id="map">
+
+        <div class="title"><h1>Раціональні вирази та дроби</h1></div>
+
+        <div class="stage" id="stage">
+
+        <div class="broom" id="b1" onclick="openModal('modal-1')">
+            <div class="broom-body">
+                <img src="https://raw.githubusercontent.com/a64151368-dot/Drobi/main/%D0%94%D0%B8%D0%B7%D0%B0%D0%B8%CC%86%D0%BD%20%D0%B1%D0%B5%D0%B7%20%D0%BD%D0%B0%D0%B7%D0%B2%D0%B8.png" alt="" draggable="false">
+                <div class="ground-glow"></div>
+                <div class="sparks"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="broom-tag">
+                    <div class="broom-num">1</div>
+                    <div class="broom-label">Який твій настрій?</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="broom" id="b2" onclick="openModal('modal-2')">
+            <div class="broom-body">
+                <img src="https://raw.githubusercontent.com/a64151368-dot/Drobi/main/%D0%94%D0%B8%D0%B7%D0%B0%D0%B8%CC%86%D0%BD%20%D0%B1%D0%B5%D0%B7%20%D0%BD%D0%B0%D0%B7%D0%B2%D0%B8.png" alt="" draggable="false">
+                <div class="ground-glow"></div>
+                <div class="sparks"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="broom-tag">
+                    <div class="broom-num">2</div>
+                    <div class="broom-label">Дзеркало Ерісед</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="broom" id="b3" onclick="openModal('modal-3')">
+            <div class="broom-body">
+                <img src="https://raw.githubusercontent.com/a64151368-dot/Drobi/main/%D0%94%D0%B8%D0%B7%D0%B0%D0%B8%CC%86%D0%BD%20%D0%B1%D0%B5%D0%B7%20%D0%BD%D0%B0%D0%B7%D0%B2%D0%B8.png" alt="" draggable="false">
+                <div class="ground-glow"></div>
+                <div class="sparks"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="broom-tag">
+                    <div class="broom-num">3</div>
+                    <div class="broom-label">Сувої знань</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="broom" id="b4" onclick="openModal('modal-4')">
+            <div class="broom-body">
+                <img src="https://raw.githubusercontent.com/a64151368-dot/Drobi/main/%D0%94%D0%B8%D0%B7%D0%B0%D0%B8%CC%86%D0%BD%20%D0%B1%D0%B5%D0%B7%20%D0%BD%D0%B0%D0%B7%D0%B2%D0%B8.png" alt="" draggable="false">
+                <div class="ground-glow"></div>
+                <div class="sparks"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="broom-tag">
+                    <div class="broom-num">4</div>
+                    <div class="broom-label">Дуельний клуб</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="broom" id="b5" onclick="openModal('modal-5')">
+            <div class="broom-body">
+                <img src="https://raw.githubusercontent.com/a64151368-dot/Drobi/main/%D0%94%D0%B8%D0%B7%D0%B0%D0%B8%CC%86%D0%BD%20%D0%B1%D0%B5%D0%B7%20%D0%BD%D0%B0%D0%B7%D0%B2%D0%B8.png" alt="" draggable="false">
+                <div class="ground-glow"></div>
+                <div class="sparks"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="broom-tag">
+                    <div class="broom-num">5</div>
+                    <div class="broom-label">Виручай-кімната</div>
+                </div>
+            </div>
+        </div>
+
+        <a class="broom" id="b6" href="https://wordwall.net/uk/resource/55578968?wwmethod=link" target="_blank">
+            <div class="broom-body">
+                <img src="https://raw.githubusercontent.com/a64151368-dot/Drobi/main/%D0%94%D0%B8%D0%B7%D0%B0%D0%B8%CC%86%D0%BD%20%D0%B1%D0%B5%D0%B7%20%D0%BD%D0%B0%D0%B7%D0%B2%D0%B8.png" alt="" draggable="false">
+                <div class="ground-glow"></div>
+                <div class="sparks"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="broom-tag">
+                    <div class="broom-num">6</div>
+                    <div class="broom-label">Хроніки мудрості</div>
+                </div>
+            </div>
+        </a>
+        </div>
+    </div>
+
+    <!-- 1. Настрій -->
+    <div id="modal-1" class="modal-overlay">
+        <div class="modal-content full">
+            <span class="close-btn" onclick="closeModal('modal-1')">&times;</span>
+            <iframe data-src="https://birdmood.lovable.app/"></iframe>
+        </div>
+    </div>
+
+    <!-- 2. Дзеркало Ерісед -->
+    <div id="modal-2" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('modal-2')">&times;</span>
+            <h2>Дзеркало Ерісед</h2>
+            <div class="dynamic-cloud">
+                <p class="magic-text">"Якби ти використав магічного помічника для розв'язування задач, хто б це був і як він би тобі допомагав?"</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Сувої знань -->
+    <div id="modal-3" class="modal-overlay">
+        <div class="modal-content full">
+            <span class="close-btn" onclick="closeModal('modal-3')">&times;</span>
+            <div class="scroll-img-wrap" id="scroll-wrap">
+                <img src="https://raw.githubusercontent.com/a64151368-dot/Drobi/main/%D0%94%D1%96%D1%96%CC%88%20%D0%BD%D0%B0%D0%B4%20%D1%80%D0%B0%D1%86%D1%96%D0%BE%D0%BD%D0%B0%D0%BB%D1%8C%D0%BD%D0%B8%D0%BC%D0%B8%20%D1%87%D0%B8%D1%81%D0%BB%D0%B0%D0%BC%D0%B8.png"
+                     alt="Сувої знань: дії над раціональними числами"
+                     onclick="document.getElementById('scroll-wrap').classList.toggle('zoomed')">
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Дуельний клуб -->
+    <div id="modal-4" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('modal-4')">&times;</span>
+            <h2>Дуельний клуб</h2>
+            <div class="btn-group">
+                <a href="https://wordwall.net/resource/66645236?wwmethod=link" target="_blank" class="btn">Вправа 1 (Wordwall)</a>
+                <a href="https://learningapps.org/view16454255" target="_blank" class="btn">Вправа 2 (LearningApps)</a>
+                <div class="btn-row">
+                    <a href="https://create.kahoot.it/details/1bf7e9b4-b0a4-47d6-b057-1b72e1576e91?drawer=" target="_blank" class="btn">Вправа 3 (Kahoot)</a>
+                    <button class="btn btn-small" onclick="copyLink('Покликання на Kahoot скопійовано!', 'https://kahoot.it/')">📋 Скопіювати Kahoot</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Виручай-кімната -->
+    <div id="modal-5" class="modal-overlay transparent-bg">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('modal-5')">&times;</span>
+            <h2>Виручай-кімната</h2>
+            <div class="btn-group">
+                <a href="https://arcade.padlet.com/game/3ZjO468EpO?link_shared=1" target="_blank" class="btn-magic-large">🪄 Перейти до завдання</a>
+                <button class="btn-magic-large" onclick="copyLink('Покликання на Виручай-кімнату скопійовано!', 'https://arcade.padlet.com/game/3ZjO468EpO?link_shared=1')">📋 Скопіювати покликання</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            const frame = modal.querySelector('iframe[data-src]');
+            if (frame && !frame.src) frame.src = frame.dataset.src;
+            modal.classList.add('active');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+            document.getElementById('scroll-wrap').classList.remove('zoomed');
+        }
+
+        // Закриття кліком по фону та клавішею Esc
+        document.querySelectorAll('.modal-overlay').forEach(m => {
+            m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); });
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.active').forEach(m => closeModal(m.id));
+        });
+
+        function copyLink(message, linkToCopy) {
+            navigator.clipboard.writeText(linkToCopy)
+                .then(() => alert(message))
+                .catch(() => alert('Не вдалося скопіювати. Покликання: ' + linkToCopy));
+        }
+
+        // Золотий пил у повітрі
+        const map = document.getElementById('stage');
+        for (let i = 0; i < 35; i++) {
+            const d = document.createElement('span');
+            d.className = 'dust';
+            d.style.left = Math.random() * 100 + '%';
+            d.style.top = 30 + Math.random() * 70 + '%';
+            d.style.animationDuration = 5 + Math.random() * 7 + 's';
+            d.style.animationDelay = Math.random() * 8 + 's';
+            map.appendChild(d);
+        }
+    </script>
+</body>
+</html>
